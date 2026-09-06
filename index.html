@@ -10,25 +10,49 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <style>
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      height: 100dvh;
-      width: 100vw;
-      overflow: hidden;
-      touch-action: pan-x pan-y;
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
     }
-    input, select { font-size: 16px !important; }
+    
+    html, body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      height: 100%;
+      height: -webkit-fill-available;
+      overflow: hidden;
+      background-color: #0F1523; /* Seamless color fill behind bottom home indicator */
+    }
+
+    .app-viewport {
+      height: 100vh;
+      height: 100dvh;
+      height: -webkit-fill-available;
+      display: flex;
+      flex-direction: column;
+      background-color: #F7F9FF;
+    }
+
+    /* Safe Area Top for iPhone notch / Dynamic Island */
+    .safe-top {
+      padding-top: max(14px, var(--sat));
+    }
+
+    /* Safe Area Bottom for iPhone Home indicator bar */
     .safe-bottom {
-      padding-bottom: max(0.6rem, env(safe-area-inset-bottom));
+      padding-bottom: max(12px, var(--sab));
+    }
+
+    input, select {
+      font-size: 16px !important;
     }
   </style>
 </head>
-<body class="bg-[#F7F9FF] text-[#191C1E] flex flex-col items-center justify-center sm:p-4">
-  
-  <div class="w-full max-w-md h-full sm:h-[94dvh] bg-white sm:rounded-3xl sm:border sm:border-[#DDE3EA] sm:shadow-lg flex flex-col overflow-hidden relative">
+<body class="text-[#191C1E] antialiased select-none flex justify-center">
+
+  <div class="app-viewport w-full max-w-md relative overflow-hidden">
     
-    <!-- Top Header -->
-    <header class="shrink-0 flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#F0F4F8] bg-white z-10">
+    <!-- Top Header (Padded below Dynamic Island / Notch) -->
+    <header class="shrink-0 flex items-center justify-between px-5 pb-3 border-b border-[#F0F4F8] bg-white z-10 safe-top">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-full bg-[#006495] flex items-center justify-center text-white font-bold text-sm shadow-sm">
           ₹
@@ -48,12 +72,11 @@
       </div>
     </header>
 
-    <!-- Main Scrollable Content -->
-    <main class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4 pb-20">
+    <!-- Main Scroll Container: Internal Scroll Only -->
+    <main class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4 pb-24">
       
       <!-- ================= TAB 1: HOME ================= -->
       <section id="tab-home" class="space-y-4">
-        
         <!-- Balance Card -->
         <div class="bg-[#CDE5FF] rounded-[28px] p-5 relative overflow-hidden text-[#001E31] shadow-sm">
           <div class="absolute -right-8 -bottom-8 w-36 h-36 bg-[#006495] opacity-10 rounded-full pointer-events-none"></div>
@@ -62,8 +85,7 @@
               <span class="text-[11px] font-semibold text-[#001E31]/70 tracking-wide uppercase">Balance Left</span>
               <h2 id="total-balance" class="text-3xl font-extrabold tracking-tight mt-1">₹0.00</h2>
             </div>
-            <!-- Clickable Debt Pill that opens friend modal -->
-            <button onclick="openFriendsModal()" id="debt-tag" class="bg-[#6B21A8] active:scale-95 text-white px-3 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1 shadow-sm transition">
+            <button onclick="openFriendsModal()" id="debt-tag" class="bg-[#6B21A8] active:scale-95 text-white px-3 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-1 shadow-sm transition">
               <span class="material-symbols-outlined text-xs">handshake</span>
               <span id="total-debt-label">₹0 Owed</span>
               <span class="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -93,7 +115,7 @@
           </div>
         </div>
 
-        <!-- Clean Quick Action Shortcuts -->
+        <!-- Quick Action Shortcuts -->
         <div class="grid grid-cols-3 gap-2">
           <button onclick="openTransactionModal('expense')" class="flex flex-col items-center justify-center gap-1.5 p-3 bg-[#006495] text-white rounded-2xl font-bold text-xs shadow-sm active:scale-95 transition">
             <span class="material-symbols-outlined text-lg">add</span>
@@ -105,13 +127,13 @@
             <span>Borrow</span>
           </button>
 
-          <button onclick="openFriendsModal()" class="flex flex-col items-center justify-center gap-1.5 p-3 bg-[#F7F9FF] text-[#191C1E] border border-[#DDE3EA] rounded-2xl font-bold text-xs shadow-sm active:scale-95 transition">
+          <button onclick="openFriendsModal()" class="flex flex-col items-center justify-center gap-1.5 p-3 bg-white text-[#191C1E] border border-[#DDE3EA] rounded-2xl font-bold text-xs shadow-sm active:scale-95 transition">
             <span class="material-symbols-outlined text-lg">group</span>
             <span>Friends</span>
           </button>
         </div>
 
-        <!-- Compact Financial Pulse Card (Replaced the long debts list) -->
+        <!-- Compact Financial Pulse Card -->
         <div class="bg-white rounded-3xl p-4 border border-[#E7EDF3] shadow-sm flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-2xl bg-[#E0F2FE] text-[#0369A1] flex items-center justify-center shrink-0">
@@ -200,37 +222,37 @@
       </section>
     </main>
 
-    <!-- Floating Action Button -->
-    <div class="absolute bottom-20 right-4 z-20 pointer-events-none">
-      <button onclick="openTransactionModal('expense')" class="pointer-events-auto bg-[#006495] text-white w-12 h-12 rounded-full shadow-lg hover:shadow-xl flex items-center justify-center active:scale-95 transition">
+    <!-- Floating Add Button (Positioned cleanly right above bottom pill bar) -->
+    <div class="absolute bottom-24 right-4 z-20 pointer-events-none">
+      <button onclick="openTransactionModal('expense')" class="pointer-events-auto bg-[#006495] active:scale-95 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition">
         <span class="material-symbols-outlined text-2xl">add</span>
       </button>
     </div>
 
-    <!-- Fixed Bottom Navigation -->
-    <nav class="shrink-0 bg-[#0F1523] border-t border-slate-800 px-3 pt-2 safe-bottom flex items-center justify-around z-30">
-      <button onclick="switchTab('home')" id="nav-btn-home" class="flex flex-col items-center gap-0.5 py-1 transition group">
+    <!-- Fixed Bottom Navigation (Full-width, edge-to-edge flush with home bar) -->
+    <nav class="shrink-0 bg-[#0F1523] border-t border-slate-800 px-3 pt-2.5 safe-bottom flex items-center justify-around z-30">
+      <button onclick="switchTab('home')" id="nav-btn-home" class="flex flex-col items-center gap-0.5 transition group">
         <div id="nav-pill-home" class="px-4 py-1 rounded-full bg-[#D2E4FF] text-[#001D36] flex items-center justify-center transition">
           <span class="material-symbols-outlined text-[19px]">dashboard</span>
         </div>
         <span id="nav-text-home" class="text-[10px] font-bold text-white">Home</span>
       </button>
 
-      <button onclick="switchTab('history')" id="nav-btn-history" class="flex flex-col items-center gap-0.5 py-1 transition group">
+      <button onclick="switchTab('history')" id="nav-btn-history" class="flex flex-col items-center gap-0.5 transition group">
         <div id="nav-pill-history" class="px-4 py-1 rounded-full text-slate-400 flex items-center justify-center transition">
           <span class="material-symbols-outlined text-[19px]">receipt_long</span>
         </div>
         <span id="nav-text-history" class="text-[10px] font-medium text-slate-400">History</span>
       </button>
 
-      <button onclick="switchTab('analysis')" id="nav-btn-analysis" class="flex flex-col items-center gap-0.5 py-1 transition group">
+      <button onclick="switchTab('analysis')" id="nav-btn-analysis" class="flex flex-col items-center gap-0.5 transition group">
         <div id="nav-pill-analysis" class="px-4 py-1 rounded-full text-slate-400 flex items-center justify-center transition">
           <span class="material-symbols-outlined text-[19px]">pie_chart</span>
         </div>
         <span id="nav-text-analysis" class="text-[10px] font-medium text-slate-400">Analysis</span>
       </button>
 
-      <button onclick="switchTab('budget')" id="nav-btn-budget" class="flex flex-col items-center gap-0.5 py-1 transition group">
+      <button onclick="switchTab('budget')" id="nav-btn-budget" class="flex flex-col items-center gap-0.5 transition group">
         <div id="nav-pill-budget" class="px-4 py-1 rounded-full text-slate-400 flex items-center justify-center transition">
           <span class="material-symbols-outlined text-[19px]">account_balance_wallet</span>
         </div>
@@ -239,9 +261,9 @@
     </nav>
   </div>
 
-  <!-- Friends Debt Modal Drawer (Opens on demand) -->
-  <div id="friends-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-3xl max-w-sm w-full p-5 space-y-3 shadow-xl border border-[#DDE3EA]">
+  <!-- Friends Debt Modal Drawer -->
+  <div id="friends-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-5 space-y-3 shadow-2xl border border-[#DDE3EA]">
       <div class="flex justify-between items-center">
         <div>
           <h3 class="text-sm font-bold text-[#191C1E]">Friends to Pay Back</h3>
@@ -259,8 +281,8 @@
   </div>
 
   <!-- Add Transaction Modal -->
-  <div id="tx-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-3xl max-w-sm w-full p-5 space-y-3.5 shadow-xl border border-[#DDE3EA]">
+  <div id="tx-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-5 space-y-3.5 shadow-2xl border border-[#DDE3EA]">
       <div class="flex justify-between items-center">
         <h3 class="text-sm font-bold text-[#191C1E]">Record Transaction</h3>
         <button onclick="closeTransactionModal()" class="text-gray-400 hover:text-gray-600">
@@ -316,8 +338,8 @@
   </div>
 
   <!-- Budget Modal -->
-  <div id="budget-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-3xl max-w-sm w-full p-5 space-y-3 shadow-xl border border-[#DDE3EA]">
+  <div id="budget-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-5 space-y-3 shadow-2xl border border-[#DDE3EA]">
       <div class="flex justify-between items-center">
         <h3 class="text-sm font-bold text-[#191C1E]">Adjust Monthly Budget</h3>
         <button onclick="closeBudgetModal()" class="text-gray-400 hover:text-gray-600">
@@ -335,7 +357,6 @@
   </div>
 
   <script>
-    // Replace with your active Google Apps Script Web App URL
     const API_URL = "https://script.google.com/macros/s/AKfycbw8Khw-2aSe8plcuaSDlcQt5zwi4cFwlrf1sYkM65SsDWXASln2_dqM1PW--7ghSzlyYw/exec";
 
     const CATEGORIES = {
@@ -360,7 +381,6 @@
       ]
     };
 
-    // Instant Startup: Load from cache first
     let transactions = JSON.parse(localStorage.getItem('cached_txs') || '[]');
     let monthlyBudget = parseFloat(localStorage.getItem('fm_budget') || '5000.00');
     let currentModalType = 'expense';
@@ -489,7 +509,6 @@
       renderFriendsModalList(friendLedger);
       renderAnalysisUI(categoryTotals);
 
-      // Top 3 Recent Entries for Home
       sorted.slice(0, 3).forEach(tx => {
         miniListEl.appendChild(createTransactionRow(tx));
       });
@@ -748,7 +767,6 @@
           : notes
       };
 
-      // Optimistic Instant Save: add to memory and refresh UI immediately
       const tempEntry = { ...payload, id: Date.now() };
       transactions.push(tempEntry);
       localStorage.setItem('cached_txs', JSON.stringify(transactions));
@@ -829,7 +847,6 @@
       renderUI();
     }
 
-    // Immediate render with local cache, then background fetch
     renderUI();
     fetchTransactions();
   </script>
