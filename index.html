@@ -4,112 +4,137 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>Finance Manager</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      height: 100dvh;
+      width: 100vw;
+      overflow: hidden;
+      touch-action: pan-x pan-y;
+    }
     input, select { font-size: 16px !important; }
+    .safe-bottom {
+      padding-bottom: max(0.6rem, env(safe-area-inset-bottom));
+    }
   </style>
 </head>
-<body class="bg-[#F7F9FF] text-[#191C1E] min-h-screen flex flex-col items-center p-3 sm:p-6 md:p-8">
-  <div class="w-full max-w-md bg-white rounded-3xl shadow-sm border border-[#DDE3EA] overflow-hidden flex flex-col min-h-[850px] relative pb-20">
+<body class="bg-[#F7F9FF] text-[#191C1E] flex flex-col items-center justify-center sm:p-4">
+  
+  <div class="w-full max-w-md h-full sm:h-[94dvh] bg-white sm:rounded-3xl sm:border sm:border-[#DDE3EA] sm:shadow-lg flex flex-col overflow-hidden relative">
     
     <!-- Top Header -->
-    <header class="flex items-center justify-between px-6 pt-5 pb-3">
+    <header class="shrink-0 flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#F0F4F8] bg-white z-10">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-[#006495] flex items-center justify-center text-white font-bold text-base shadow-sm">
+        <div class="w-9 h-9 rounded-full bg-[#006495] flex items-center justify-center text-white font-bold text-sm shadow-sm">
           ₹
         </div>
         <div>
-          <p class="text-[11px] text-[#41484D] font-medium">Personal Ledger</p>
-          <h1 id="screen-title" class="text-base font-bold text-[#191C1E]">Overview</h1>
+          <p class="text-[10px] text-[#41484D] font-semibold uppercase tracking-wider">Personal Ledger</p>
+          <h1 id="screen-title" class="text-sm font-bold text-[#191C1E] leading-tight">Overview</h1>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button id="refresh-btn" onclick="fetchTransactions()" title="Sync Google Sheets" class="w-9 h-9 rounded-full border border-[#DDE3EA] flex items-center justify-center hover:bg-gray-50 active:scale-95 transition">
+        <span id="sync-status" class="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Synced
+        </span>
+        <button id="refresh-btn" onclick="fetchTransactions(true)" title="Sync Google Sheets" class="w-8 h-8 rounded-full border border-[#DDE3EA] flex items-center justify-center hover:bg-gray-50 active:scale-95 transition">
           <span id="refresh-icon" class="material-symbols-outlined text-lg text-[#191C1E]">sync</span>
         </button>
       </div>
     </header>
 
     <!-- Main Scrollable Content -->
-    <main class="flex-1 px-5 space-y-4 overflow-y-auto">
+    <main class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4 pb-20">
       
       <!-- ================= TAB 1: HOME ================= -->
       <section id="tab-home" class="space-y-4">
-        <!-- Balance Hero Card -->
-        <div class="bg-[#CDE5FF] rounded-[32px] p-5 sm:p-6 relative overflow-hidden text-[#001E31] shadow-sm">
-          <div class="absolute -right-8 -bottom-8 w-40 h-40 bg-[#006495] opacity-10 rounded-full pointer-events-none"></div>
+        
+        <!-- Balance Card -->
+        <div class="bg-[#CDE5FF] rounded-[28px] p-5 relative overflow-hidden text-[#001E31] shadow-sm">
+          <div class="absolute -right-8 -bottom-8 w-36 h-36 bg-[#006495] opacity-10 rounded-full pointer-events-none"></div>
           <div class="flex justify-between items-start">
             <div>
-              <span class="text-xs font-semibold text-[#001E31]/70 tracking-wide uppercase">Balance Left</span>
-              <h2 id="total-balance" class="text-3xl sm:text-4xl font-extrabold tracking-tight mt-1">₹0.00</h2>
+              <span class="text-[11px] font-semibold text-[#001E31]/70 tracking-wide uppercase">Balance Left</span>
+              <h2 id="total-balance" class="text-3xl font-extrabold tracking-tight mt-1">₹0.00</h2>
             </div>
-            <div id="debt-tag" class="bg-[#6B21A8] text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 shadow-sm">
-              <span class="material-symbols-outlined text-sm">handshake</span>
+            <!-- Clickable Debt Pill that opens friend modal -->
+            <button onclick="openFriendsModal()" id="debt-tag" class="bg-[#6B21A8] active:scale-95 text-white px-3 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1 shadow-sm transition">
+              <span class="material-symbols-outlined text-xs">handshake</span>
               <span id="total-debt-label">₹0 Owed</span>
-            </div>
+              <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+            </button>
           </div>
 
-          <div class="grid grid-cols-2 gap-3 mt-5">
-            <div class="bg-white/90 rounded-2xl p-3 flex items-center gap-3 border border-white/80 shadow-sm">
-              <div class="w-8 h-8 rounded-xl bg-[#DCFCE7] flex items-center justify-center text-[#386A20] shrink-0">
-                <span class="material-symbols-outlined text-base">arrow_upward</span>
+          <div class="grid grid-cols-2 gap-2.5 mt-4">
+            <div class="bg-white/90 rounded-2xl p-2.5 flex items-center gap-2.5 border border-white/80 shadow-sm">
+              <div class="w-7 h-7 rounded-xl bg-[#DCFCE7] flex items-center justify-center text-[#386A20] shrink-0">
+                <span class="material-symbols-outlined text-sm">arrow_upward</span>
               </div>
               <div class="min-w-0">
-                <p class="text-[11px] text-[#41484D] font-medium">Money In</p>
-                <p id="total-income" class="text-sm font-bold text-[#386A20] truncate">₹0.00</p>
+                <p class="text-[10px] text-[#41484D] font-medium">Money In</p>
+                <p id="total-income" class="text-xs font-bold text-[#386A20] truncate">₹0.00</p>
               </div>
             </div>
 
-            <div class="bg-white/90 rounded-2xl p-3 flex items-center gap-3 border border-white/80 shadow-sm">
-              <div class="w-8 h-8 rounded-xl bg-[#FFDAD6] flex items-center justify-center text-[#BA1A1A] shrink-0">
-                <span class="material-symbols-outlined text-base">arrow_downward</span>
+            <div class="bg-white/90 rounded-2xl p-2.5 flex items-center gap-2.5 border border-white/80 shadow-sm">
+              <div class="w-7 h-7 rounded-xl bg-[#FFDAD6] flex items-center justify-center text-[#BA1A1A] shrink-0">
+                <span class="material-symbols-outlined text-sm">arrow_downward</span>
               </div>
               <div class="min-w-0">
-                <p class="text-[11px] text-[#41484D] font-medium">Total Spent</p>
-                <p id="total-expense" class="text-sm font-bold text-[#BA1A1A] truncate">₹0.00</p>
+                <p class="text-[10px] text-[#41484D] font-medium">Total Spent</p>
+                <p id="total-expense" class="text-xs font-bold text-[#BA1A1A] truncate">₹0.00</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Quick Entry Trigger -->
-        <div class="grid grid-cols-2 gap-2.5">
-          <button onclick="openTransactionModal('expense')" class="flex items-center justify-center gap-2 p-3 bg-[#006495] text-white rounded-2xl font-bold text-xs shadow-sm active:scale-95 transition">
+        <!-- Clean Quick Action Shortcuts -->
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="openTransactionModal('expense')" class="flex flex-col items-center justify-center gap-1.5 p-3 bg-[#006495] text-white rounded-2xl font-bold text-xs shadow-sm active:scale-95 transition">
             <span class="material-symbols-outlined text-lg">add</span>
-            <span>Record Spent</span>
+            <span>Spent</span>
           </button>
-          <button onclick="openTransactionModal('borrowed')" class="flex items-center justify-center gap-2 p-3 bg-[#F3E8FF] text-[#6B21A8] border border-[#E9D5FF] rounded-2xl font-bold text-xs shadow-sm active:scale-95 transition">
+          
+          <button onclick="openTransactionModal('borrowed')" class="flex flex-col items-center justify-center gap-1.5 p-3 bg-[#F3E8FF] text-[#6B21A8] border border-[#E9D5FF] rounded-2xl font-bold text-xs shadow-sm active:scale-95 transition">
             <span class="material-symbols-outlined text-lg">handshake</span>
-            <span>Borrow Money</span>
+            <span>Borrow</span>
+          </button>
+
+          <button onclick="openFriendsModal()" class="flex flex-col items-center justify-center gap-1.5 p-3 bg-[#F7F9FF] text-[#191C1E] border border-[#DDE3EA] rounded-2xl font-bold text-xs shadow-sm active:scale-95 transition">
+            <span class="material-symbols-outlined text-lg">group</span>
+            <span>Friends</span>
           </button>
         </div>
 
-        <!-- Friend Debt Summary -->
-        <div class="bg-white rounded-3xl p-5 border border-[#E7EDF3] shadow-sm space-y-3">
-          <div class="flex justify-between items-center">
-            <div>
-              <h3 class="text-sm font-bold text-[#191C1E]">Friends to Pay Back</h3>
-              <p class="text-xs text-[#41484D]">Active borrowed balances</p>
+        <!-- Compact Financial Pulse Card (Replaced the long debts list) -->
+        <div class="bg-white rounded-3xl p-4 border border-[#E7EDF3] shadow-sm flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#E0F2FE] text-[#0369A1] flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-xl">account_balance_wallet</span>
             </div>
-            <span class="text-xs font-bold text-[#6B21A8] bg-[#F3E8FF] px-2.5 py-1 rounded-full">Dues</span>
+            <div>
+              <p class="text-[11px] font-bold text-[#191C1E]">Monthly Budget</p>
+              <p id="home-budget-hint" class="text-[10px] text-slate-500">₹0 remaining this month</p>
+            </div>
           </div>
-          <div id="home-friends-debt-list" class="space-y-2">
-            <p class="text-xs text-slate-400 py-2 text-center">✨ All friend debts are cleared!</p>
-          </div>
+          <button onclick="switchTab('budget')" class="px-3 py-1.5 bg-[#F0F4F8] hover:bg-slate-200 text-xs font-bold rounded-xl text-[#006495] transition">
+            Details
+          </button>
         </div>
 
-        <!-- Recent Mini Activity Feed -->
+        <!-- Recent Activity Feed -->
         <div class="space-y-2 pt-1">
           <div class="flex justify-between items-center">
-            <h3 class="font-bold text-sm text-[#191C1E]">Recent Activity</h3>
-            <button onclick="switchTab('history')" class="text-xs text-[#006495] font-semibold hover:underline">View All</button>
+            <h3 class="font-bold text-xs text-[#191C1E]">Recent Activity</h3>
+            <button onclick="switchTab('history')" class="text-[11px] text-[#006495] font-semibold hover:underline">View All</button>
           </div>
           <div id="home-mini-list" class="space-y-2">
-            <!-- Top 3 Recent rows -->
+            <!-- 3 Recent Entries -->
           </div>
         </div>
       </section>
@@ -117,147 +142,160 @@
       <!-- ================= TAB 2: HISTORY ================= -->
       <section id="tab-history" class="space-y-3 hidden">
         <div class="flex items-center justify-between">
-          <h3 class="font-bold text-base text-[#191C1E]">Full Transaction Log</h3>
+          <h3 class="font-bold text-sm text-[#191C1E]">Full Transaction Log</h3>
           <span id="tx-count" class="text-xs text-[#41484D] font-medium">0 records</span>
         </div>
 
-        <!-- Filter Chips -->
         <div class="flex gap-1.5 overflow-x-auto pb-1 text-xs font-semibold">
-          <button onclick="filterType('all')" id="filter-all" class="px-3 py-1.5 rounded-xl bg-[#006495] text-white transition">All</button>
-          <button onclick="filterType('expense')" id="filter-expense" class="px-3 py-1.5 rounded-xl bg-[#F0F4F8] text-[#41484D] hover:bg-gray-200 transition">Spent</button>
-          <button onclick="filterType('income')" id="filter-income" class="px-3 py-1.5 rounded-xl bg-[#F0F4F8] text-[#41484D] hover:bg-gray-200 transition">Income</button>
-          <button onclick="filterType('debt')" id="filter-debt" class="px-3 py-1.5 rounded-xl bg-[#F0F4F8] text-[#41484D] hover:bg-gray-200 transition">Debts</button>
+          <button onclick="filterType('all')" id="filter-all" class="px-3 py-1.5 rounded-xl bg-[#006495] text-white transition shrink-0">All</button>
+          <button onclick="filterType('expense')" id="filter-expense" class="px-3 py-1.5 rounded-xl bg-[#F0F4F8] text-[#41484D] hover:bg-gray-200 transition shrink-0">Spent</button>
+          <button onclick="filterType('income')" id="filter-income" class="px-3 py-1.5 rounded-xl bg-[#F0F4F8] text-[#41484D] hover:bg-gray-200 transition shrink-0">Income</button>
+          <button onclick="filterType('debt')" id="filter-debt" class="px-3 py-1.5 rounded-xl bg-[#F0F4F8] text-[#41484D] hover:bg-gray-200 transition shrink-0">Debts</button>
         </div>
 
-        <div id="full-transaction-list" class="space-y-2.5 pb-4">
+        <div id="full-transaction-list" class="space-y-2">
           <!-- Populated dynamically -->
         </div>
       </section>
 
       <!-- ================= TAB 3: ANALYSIS ================= -->
-      <section id="tab-analysis" class="space-y-4 hidden">
-        <div class="bg-white rounded-3xl p-5 border border-[#E7EDF3] shadow-sm">
-          <h3 class="text-sm font-bold text-[#191C1E] mb-1">Expense Breakdown</h3>
-          <p class="text-xs text-[#41484D] mb-4">Highest spending areas (excluding loans)</p>
-          <div id="category-breakdown-list" class="space-y-3">
+      <section id="tab-analysis" class="space-y-3 hidden">
+        <div class="bg-white rounded-3xl p-4 border border-[#E7EDF3] shadow-sm">
+          <h3 class="text-xs font-bold text-[#191C1E] mb-1">Expense Breakdown</h3>
+          <p class="text-[11px] text-[#41484D] mb-3">Highest spending areas (excluding loans)</p>
+          <div id="category-breakdown-list" class="space-y-2.5">
             <p class="text-xs text-slate-400 text-center py-4">No expense records found.</p>
           </div>
         </div>
       </section>
 
       <!-- ================= TAB 4: BUDGET ================= -->
-      <section id="tab-budget" class="space-y-4 hidden">
-        <div class="bg-white rounded-3xl p-5 border border-[#E7EDF3] shadow-sm space-y-4">
+      <section id="tab-budget" class="space-y-3 hidden">
+        <div class="bg-white rounded-3xl p-4 border border-[#E7EDF3] shadow-sm space-y-3">
           <div class="flex justify-between items-center">
             <div>
-              <h3 class="text-sm font-bold text-[#191C1E]">Monthly Spending Target</h3>
-              <p id="budget-spent-label" class="text-xs text-[#41484D]">₹0.00 of ₹5,000.00</p>
+              <h3 class="text-xs font-bold text-[#191C1E]">Monthly Spending Target</h3>
+              <p id="budget-spent-label" class="text-[11px] text-[#41484D]">₹0.00 of ₹5,000.00</p>
             </div>
-            <button onclick="openBudgetModal()" class="w-8 h-8 rounded-full bg-[#F7F9FF] border border-[#DDE3EA] flex items-center justify-center text-[#006495] hover:bg-gray-100 transition">
-              <span class="material-symbols-outlined text-sm">edit</span>
+            <button onclick="openBudgetModal()" class="w-7 h-7 rounded-full bg-[#F7F9FF] border border-[#DDE3EA] flex items-center justify-center text-[#006495] hover:bg-gray-100 transition">
+              <span class="material-symbols-outlined text-xs">edit</span>
             </button>
           </div>
 
-          <div class="w-full bg-[#DDE3EA] rounded-full h-3 overflow-hidden">
-            <div id="budget-progress-bar" class="bg-[#006495] h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+          <div class="w-full bg-[#DDE3EA] rounded-full h-2.5 overflow-hidden">
+            <div id="budget-progress-bar" class="bg-[#006495] h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3 pt-1 text-xs">
-            <div class="bg-[#F7F9FF] p-3 rounded-2xl border border-[#E7EDF3]">
-              <span class="text-[#41484D]">Remaining</span>
-              <p id="budget-remaining" class="font-bold text-sm text-[#191C1E] mt-0.5">₹5,000.00</p>
+          <div class="grid grid-cols-2 gap-2 pt-1 text-xs">
+            <div class="bg-[#F7F9FF] p-2.5 rounded-2xl border border-[#E7EDF3]">
+              <span class="text-[10px] text-[#41484D]">Remaining</span>
+              <p id="budget-remaining" class="font-bold text-xs text-[#191C1E] mt-0.5">₹5,000.00</p>
             </div>
-            <div class="bg-[#F7F9FF] p-3 rounded-2xl border border-[#E7EDF3]">
-              <span class="text-[#41484D]">Daily Allowance</span>
-              <p id="budget-daily" class="font-bold text-sm text-[#006495] mt-0.5">₹166.67 / day</p>
+            <div class="bg-[#F7F9FF] p-2.5 rounded-2xl border border-[#E7EDF3]">
+              <span class="text-[10px] text-[#41484D]">Daily Allowance</span>
+              <p id="budget-daily" class="font-bold text-xs text-[#006495] mt-0.5">₹166.67 / day</p>
             </div>
           </div>
         </div>
       </section>
     </main>
 
-    <!-- Floating Add Record Trigger (Always accessible on screen) -->
-    <div class="fixed bottom-20 w-full max-w-md px-6 flex justify-end pointer-events-none z-20">
+    <!-- Floating Action Button -->
+    <div class="absolute bottom-20 right-4 z-20 pointer-events-none">
       <button onclick="openTransactionModal('expense')" class="pointer-events-auto bg-[#006495] text-white w-12 h-12 rounded-full shadow-lg hover:shadow-xl flex items-center justify-center active:scale-95 transition">
         <span class="material-symbols-outlined text-2xl">add</span>
       </button>
     </div>
 
-    <!-- ================= FIXED BOTTOM PILL NAVIGATION BAR ================= -->
-    <nav class="absolute bottom-0 inset-x-0 bg-[#0F1523] border-t border-slate-800 px-3 py-2.5 flex items-center justify-around z-30">
-      <!-- Home Pill -->
-      <button onclick="switchTab('home')" id="nav-btn-home" class="flex flex-col items-center gap-1 py-1 transition group">
+    <!-- Fixed Bottom Navigation -->
+    <nav class="shrink-0 bg-[#0F1523] border-t border-slate-800 px-3 pt-2 safe-bottom flex items-center justify-around z-30">
+      <button onclick="switchTab('home')" id="nav-btn-home" class="flex flex-col items-center gap-0.5 py-1 transition group">
         <div id="nav-pill-home" class="px-4 py-1 rounded-full bg-[#D2E4FF] text-[#001D36] flex items-center justify-center transition">
-          <span class="material-symbols-outlined text-[20px]">dashboard</span>
+          <span class="material-symbols-outlined text-[19px]">dashboard</span>
         </div>
-        <span id="nav-text-home" class="text-[11px] font-bold text-white">Home</span>
+        <span id="nav-text-home" class="text-[10px] font-bold text-white">Home</span>
       </button>
 
-      <!-- History Tab -->
-      <button onclick="switchTab('history')" id="nav-btn-history" class="flex flex-col items-center gap-1 py-1 transition group">
+      <button onclick="switchTab('history')" id="nav-btn-history" class="flex flex-col items-center gap-0.5 py-1 transition group">
         <div id="nav-pill-history" class="px-4 py-1 rounded-full text-slate-400 flex items-center justify-center transition">
-          <span class="material-symbols-outlined text-[20px]">receipt_long</span>
+          <span class="material-symbols-outlined text-[19px]">receipt_long</span>
         </div>
-        <span id="nav-text-history" class="text-[11px] font-medium text-slate-400">History</span>
+        <span id="nav-text-history" class="text-[10px] font-medium text-slate-400">History</span>
       </button>
 
-      <!-- Analysis Tab -->
-      <button onclick="switchTab('analysis')" id="nav-btn-analysis" class="flex flex-col items-center gap-1 py-1 transition group">
+      <button onclick="switchTab('analysis')" id="nav-btn-analysis" class="flex flex-col items-center gap-0.5 py-1 transition group">
         <div id="nav-pill-analysis" class="px-4 py-1 rounded-full text-slate-400 flex items-center justify-center transition">
-          <span class="material-symbols-outlined text-[20px]">pie_chart</span>
+          <span class="material-symbols-outlined text-[19px]">pie_chart</span>
         </div>
-        <span id="nav-text-analysis" class="text-[11px] font-medium text-slate-400">Analysis</span>
+        <span id="nav-text-analysis" class="text-[10px] font-medium text-slate-400">Analysis</span>
       </button>
 
-      <!-- Budget Tab -->
-      <button onclick="switchTab('budget')" id="nav-btn-budget" class="flex flex-col items-center gap-1 py-1 transition group">
+      <button onclick="switchTab('budget')" id="nav-btn-budget" class="flex flex-col items-center gap-0.5 py-1 transition group">
         <div id="nav-pill-budget" class="px-4 py-1 rounded-full text-slate-400 flex items-center justify-center transition">
-          <span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+          <span class="material-symbols-outlined text-[19px]">account_balance_wallet</span>
         </div>
-        <span id="nav-text-budget" class="text-[11px] font-medium text-slate-400">Budget</span>
+        <span id="nav-text-budget" class="text-[10px] font-medium text-slate-400">Budget</span>
       </button>
     </nav>
   </div>
 
-  <!-- Add Transaction Modal -->
-  <div id="tx-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-xl border border-[#DDE3EA]">
+  <!-- Friends Debt Modal Drawer (Opens on demand) -->
+  <div id="friends-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-5 space-y-3 shadow-xl border border-[#DDE3EA]">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-bold text-[#191C1E]">Record Transaction</h3>
-        <button onclick="closeTransactionModal()" class="text-gray-400 hover:text-gray-600">
-          <span class="material-symbols-outlined">close</span>
+        <div>
+          <h3 class="text-sm font-bold text-[#191C1E]">Friends to Pay Back</h3>
+          <p class="text-[11px] text-slate-400">Net borrowed balances</p>
+        </div>
+        <button onclick="closeFriendsModal()" class="text-gray-400 hover:text-gray-600">
+          <span class="material-symbols-outlined text-lg">close</span>
         </button>
       </div>
 
-      <!-- 4-Type Switch -->
-      <div class="grid grid-cols-4 bg-[#F7F9FF] p-1 rounded-xl border border-[#DDE3EA] text-[11px] font-bold text-center">
-        <button type="button" id="btn-expense" onclick="setModalType('expense')" class="py-2 rounded-lg bg-[#BA1A1A] text-white transition shadow-sm">Spent</button>
-        <button type="button" id="btn-income" onclick="setModalType('income')" class="py-2 rounded-lg text-[#41484D] transition">Income</button>
-        <button type="button" id="btn-borrowed" onclick="setModalType('borrowed')" class="py-2 rounded-lg text-[#41484D] transition">Borrow</button>
-        <button type="button" id="btn-repaid" onclick="setModalType('repaid')" class="py-2 rounded-lg text-[#41484D] transition">Repay</button>
+      <div id="modal-friends-list" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+        <!-- Friends list rendered here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Transaction Modal -->
+  <div id="tx-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-5 space-y-3.5 shadow-xl border border-[#DDE3EA]">
+      <div class="flex justify-between items-center">
+        <h3 class="text-sm font-bold text-[#191C1E]">Record Transaction</h3>
+        <button onclick="closeTransactionModal()" class="text-gray-400 hover:text-gray-600">
+          <span class="material-symbols-outlined text-lg">close</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-4 bg-[#F7F9FF] p-1 rounded-xl border border-[#DDE3EA] text-[10px] font-bold text-center">
+        <button type="button" id="btn-expense" onclick="setModalType('expense')" class="py-1.5 rounded-lg bg-[#BA1A1A] text-white transition shadow-sm">Spent</button>
+        <button type="button" id="btn-income" onclick="setModalType('income')" class="py-1.5 rounded-lg text-[#41484D] transition">Income</button>
+        <button type="button" id="btn-borrowed" onclick="setModalType('borrowed')" class="py-1.5 rounded-lg text-[#41484D] transition">Borrow</button>
+        <button type="button" id="btn-repaid" onclick="setModalType('repaid')" class="py-1.5 rounded-lg text-[#41484D] transition">Repay</button>
       </div>
 
       <div>
-        <label class="text-xs font-semibold text-[#41484D]">Amount (₹)</label>
+        <label class="text-[11px] font-semibold text-[#41484D]">Amount (₹)</label>
         <div class="relative mt-1">
-          <span class="absolute left-3 top-2.5 font-bold text-gray-400 text-lg">₹</span>
-          <input id="tx-amount" type="number" step="0.01" placeholder="0.00" class="w-full pl-8 pr-4 py-2.5 rounded-xl border border-[#DDE3EA] font-bold text-lg focus:outline-none focus:border-[#006495]" />
+          <span class="absolute left-3 top-2 font-bold text-gray-400 text-base">₹</span>
+          <input id="tx-amount" type="number" step="0.01" placeholder="0.00" class="w-full pl-7 pr-3 py-2 rounded-xl border border-[#DDE3EA] font-bold text-base focus:outline-none focus:border-[#006495]" />
         </div>
       </div>
 
       <div>
-        <label id="tx-title-label" class="text-xs font-semibold text-[#41484D]">Store / Payee</label>
-        <input id="tx-title" type="text" placeholder="e.g., Grocery Store" class="w-full mt-1 px-4 py-2.5 rounded-xl border border-[#DDE3EA] text-sm focus:outline-none focus:border-[#006495]" />
+        <label id="tx-title-label" class="text-[11px] font-semibold text-[#41484D]">Store / Payee</label>
+        <input id="tx-title" type="text" placeholder="e.g., Grocery Store" class="w-full mt-1 px-3 py-2 rounded-xl border border-[#DDE3EA] text-xs focus:outline-none focus:border-[#006495]" />
       </div>
 
       <div class="grid grid-cols-2 gap-2">
         <div>
-          <label class="text-xs font-semibold text-[#41484D]">Category</label>
-          <select id="tx-category" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-[#DDE3EA] text-xs focus:outline-none focus:border-[#006495] bg-white"></select>
+          <label class="text-[11px] font-semibold text-[#41484D]">Category</label>
+          <select id="tx-category" class="w-full mt-1 px-2.5 py-2 rounded-xl border border-[#DDE3EA] text-xs focus:outline-none focus:border-[#006495] bg-white"></select>
         </div>
         <div>
-          <label class="text-xs font-semibold text-[#41484D]">Account</label>
-          <select id="tx-account" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-[#DDE3EA] text-xs focus:outline-none focus:border-[#006495] bg-white">
+          <label class="text-[11px] font-semibold text-[#41484D]">Account</label>
+          <select id="tx-account" class="w-full mt-1 px-2.5 py-2 rounded-xl border border-[#DDE3EA] text-xs focus:outline-none focus:border-[#006495] bg-white">
             <option value="UPI">UPI</option>
             <option value="Bank Account">Bank Account</option>
             <option value="Cash">Cash</option>
@@ -267,37 +305,37 @@
       </div>
 
       <div>
-        <label class="text-xs font-semibold text-[#41484D]">Notes (Optional)</label>
-        <input id="tx-notes" type="text" placeholder="e.g., Dinner with team" class="w-full mt-1 px-4 py-2 rounded-xl border border-[#DDE3EA] text-xs focus:outline-none focus:border-[#006495]" />
+        <label class="text-[11px] font-semibold text-[#41484D]">Notes (Optional)</label>
+        <input id="tx-notes" type="text" placeholder="Optional notes" class="w-full mt-1 px-3 py-1.5 rounded-xl border border-[#DDE3EA] text-xs focus:outline-none focus:border-[#006495]" />
       </div>
 
-      <button id="save-tx-btn" onclick="saveTransaction()" class="w-full bg-[#006495] text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 active:scale-98 transition shadow-sm">
+      <button id="save-tx-btn" onclick="saveTransaction()" class="w-full bg-[#006495] text-white py-2.5 rounded-xl font-bold text-xs hover:opacity-90 active:scale-98 transition shadow-sm">
         Save Transaction
       </button>
     </div>
   </div>
 
-  <!-- Budget Settings Modal -->
+  <!-- Budget Modal -->
   <div id="budget-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-xl border border-[#DDE3EA]">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-5 space-y-3 shadow-xl border border-[#DDE3EA]">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-bold text-[#191C1E]">Adjust Monthly Budget</h3>
+        <h3 class="text-sm font-bold text-[#191C1E]">Adjust Monthly Budget</h3>
         <button onclick="closeBudgetModal()" class="text-gray-400 hover:text-gray-600">
-          <span class="material-symbols-outlined">close</span>
+          <span class="material-symbols-outlined text-lg">close</span>
         </button>
       </div>
       <div>
-        <label class="text-xs font-semibold text-[#41484D]">Monthly Target (₹)</label>
-        <input id="budget-input" type="number" step="500" class="w-full mt-1 px-4 py-2.5 rounded-xl border border-[#DDE3EA] font-bold text-lg focus:outline-none focus:border-[#006495]" />
+        <label class="text-[11px] font-semibold text-[#41484D]">Monthly Target (₹)</label>
+        <input id="budget-input" type="number" step="500" class="w-full mt-1 px-3 py-2 rounded-xl border border-[#DDE3EA] font-bold text-base focus:outline-none focus:border-[#006495]" />
       </div>
-      <button onclick="saveBudget()" class="w-full bg-[#006495] text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition">
+      <button onclick="saveBudget()" class="w-full bg-[#006495] text-white py-2.5 rounded-xl font-bold text-xs hover:opacity-90 transition">
         Save Budget
       </button>
     </div>
   </div>
 
   <script>
-    // Paste your Google Apps Script Web App URL below
+    // Replace with your active Google Apps Script Web App URL
     const API_URL = "https://script.google.com/macros/s/AKfycbw8Khw-2aSe8plcuaSDlcQt5zwi4cFwlrf1sYkM65SsDWXASln2_dqM1PW--7ghSzlyYw/exec";
 
     const CATEGORIES = {
@@ -322,7 +360,8 @@
       ]
     };
 
-    let transactions = [];
+    // Instant Startup: Load from cache first
+    let transactions = JSON.parse(localStorage.getItem('cached_txs') || '[]');
     let monthlyBudget = parseFloat(localStorage.getItem('fm_budget') || '5000.00');
     let currentModalType = 'expense';
     let activeFilter = 'all';
@@ -331,7 +370,6 @@
       return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(val);
     }
 
-    // --- TAB SWITCHER LOGIC ---
     function switchTab(tab) {
       const tabs = ['home', 'history', 'analysis', 'budget'];
       const titles = {
@@ -351,25 +389,34 @@
         if (t === tab) {
           sec.classList.remove('hidden');
           pill.className = "px-4 py-1 rounded-full bg-[#D2E4FF] text-[#001D36] flex items-center justify-center transition";
-          txt.className = "text-[11px] font-bold text-white";
+          txt.className = "text-[10px] font-bold text-white";
         } else {
           sec.classList.add('hidden');
           pill.className = "px-4 py-1 rounded-full text-slate-400 flex items-center justify-center transition";
-          txt.className = "text-[11px] font-medium text-slate-400";
+          txt.className = "text-[10px] font-medium text-slate-400";
         }
       });
     }
 
-    async function fetchTransactions() {
+    async function fetchTransactions(manual = false) {
+      const statusEl = document.getElementById("sync-status");
       const refreshIcon = document.getElementById("refresh-icon");
       refreshIcon.classList.add("animate-spin");
+      statusEl.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Syncing...';
+      statusEl.className = "text-[10px] text-amber-600 font-semibold flex items-center gap-1";
 
       try {
         const response = await fetch(API_URL);
-        transactions = await response.json();
+        const remoteData = await response.json();
+        transactions = remoteData;
+        localStorage.setItem('cached_txs', JSON.stringify(transactions));
         renderUI();
+        statusEl.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Synced';
+        statusEl.className = "text-[10px] text-emerald-600 font-semibold flex items-center gap-1";
       } catch (err) {
-        console.error("Failed to fetch records:", err);
+        console.error("Sync error:", err);
+        statusEl.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Offline';
+        statusEl.className = "text-[10px] text-rose-500 font-semibold flex items-center gap-1";
       } finally {
         refreshIcon.classList.remove("animate-spin");
       }
@@ -387,15 +434,14 @@
       fullListEl.innerHTML = '';
       miniListEl.innerHTML = '';
 
-      // Blank state reset
       if (!transactions || transactions.length === 0) {
         document.getElementById('total-balance').textContent = "₹0.00";
         document.getElementById('total-income').textContent = "₹0.00";
         document.getElementById('total-expense').textContent = "₹0.00";
         document.getElementById('total-debt-label').textContent = "₹0 Owed";
         document.getElementById('tx-count').textContent = "0 records";
-        document.getElementById('home-friends-debt-list').innerHTML = '<p class="text-xs text-slate-400 py-2 text-center">✨ All friend debts are cleared!</p>';
-        fullListEl.innerHTML = '<div class="p-8 text-center text-xs text-slate-400">No records found. Tap + to add.</div>';
+        document.getElementById('modal-friends-list').innerHTML = '<p class="text-xs text-slate-400 py-4 text-center">✨ All friend debts are cleared!</p>';
+        fullListEl.innerHTML = '<div class="p-6 text-center text-xs text-slate-400">No records found. Tap + to add.</div>';
         miniListEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No activity yet.</p>';
         updateBudgetUI(0);
         renderAnalysisUI({});
@@ -404,7 +450,6 @@
 
       const sorted = [...transactions].reverse();
 
-      // Calculation pass
       sorted.forEach(t => {
         const amt = parseFloat(t.amount) || 0;
         const cat = t.category || "General";
@@ -435,22 +480,20 @@
 
       const balance = totalIncome - totalExpense;
 
-      // Update Top Summary Cards
       document.getElementById('total-balance').textContent = formatCurrency(balance);
       document.getElementById('total-income').textContent = formatCurrency(totalIncome);
       document.getElementById('total-expense').textContent = formatCurrency(totalExpense);
       document.getElementById('total-debt-label').textContent = `₹${Math.max(0, Math.round(totalDebtOwed)).toLocaleString('en-IN')} Owed`;
 
       updateBudgetUI(totalExpense);
-      renderFriendsDebt(friendLedger);
+      renderFriendsModalList(friendLedger);
       renderAnalysisUI(categoryTotals);
 
-      // Populate Mini List for Home Tab (last 3 items)
+      // Top 3 Recent Entries for Home
       sorted.slice(0, 3).forEach(tx => {
         miniListEl.appendChild(createTransactionRow(tx));
       });
 
-      // Filtered Full Transaction View
       const filtered = sorted.filter(t => {
         const amt = parseFloat(t.amount) || 0;
         const cat = t.category || "";
@@ -507,23 +550,23 @@
       const safePayee = (tx.payee || "Untitled").replace(/'/g, "\\'");
 
       const item = document.createElement('div');
-      item.className = 'flex items-center justify-between p-3.5 bg-white rounded-2xl border border-[#F0F4F8] hover:border-[#DDE3EA] transition group';
+      item.className = 'flex items-center justify-between p-3 bg-white rounded-2xl border border-[#F0F4F8] hover:border-[#DDE3EA] transition group';
       item.innerHTML = `
-        <div class="flex items-center gap-3 min-w-0 pr-2">
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background-color: ${bg}; color: ${color};">
-            <span class="material-symbols-outlined text-lg">${icon}</span>
+        <div class="flex items-center gap-2.5 min-w-0 pr-2">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background-color: ${bg}; color: ${color};">
+            <span class="material-symbols-outlined text-base">${icon}</span>
           </div>
           <div class="min-w-0">
-            <p class="font-bold text-sm text-[#191C1E] truncate">${tx.payee || "Untitled"}</p>
-            <p class="text-xs text-[#41484D] truncate">${catName} • ${displayDate} • ${tx.account || 'UPI'}</p>
+            <p class="font-bold text-xs text-[#191C1E] truncate">${tx.payee || "Untitled"}</p>
+            <p class="text-[10px] text-[#41484D] truncate">${catName} • ${displayDate} • ${tx.account || 'UPI'}</p>
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <div class="text-right">
-            <p class="font-bold text-sm ${amountColor}">${formattedAmt}</p>
+            <p class="font-bold text-xs ${amountColor}">${formattedAmt}</p>
           </div>
           <button onclick="deleteTransaction('${tx.id}', '${safePayee}', ${amt})" class="opacity-40 group-hover:opacity-100 hover:text-red-500 text-gray-400 p-1 transition" title="Delete">
-            <span class="material-symbols-outlined text-base">delete</span>
+            <span class="material-symbols-outlined text-sm">delete</span>
           </button>
         </div>
       `;
@@ -569,16 +612,17 @@
       document.getElementById('budget-progress-bar').style.width = `${percent}%`;
       document.getElementById('budget-remaining').textContent = formatCurrency(remaining);
       document.getElementById('budget-daily').textContent = `${formatCurrency(daily)} / day`;
+      document.getElementById('home-budget-hint').textContent = `${formatCurrency(Math.max(0, remaining))} remaining this month`;
     }
 
-    function renderFriendsDebt(ledger) {
-      const container = document.getElementById('home-friends-debt-list');
+    function renderFriendsModalList(ledger) {
+      const container = document.getElementById('modal-friends-list');
       container.innerHTML = "";
 
       const activeFriends = Object.entries(ledger).filter(([_, balance]) => balance > 0);
 
       if (activeFriends.length === 0) {
-        container.innerHTML = '<p class="text-xs text-slate-400 py-2 text-center">✨ All friend debts are cleared!</p>';
+        container.innerHTML = '<p class="text-xs text-slate-400 py-6 text-center">✨ All friend debts are cleared!</p>';
         return;
       }
 
@@ -594,13 +638,23 @@
           </div>
           <div class="flex items-center gap-2">
             <span class="font-bold text-[#6B21A8]">₹${balance.toLocaleString('en-IN')}</span>
-            <button onclick="openTransactionModal('repaid', '${friend}')" class="px-2.5 py-1 bg-[#6B21A8] text-white rounded-lg font-bold text-[10px] active:scale-95 transition">
+            <button onclick="closeFriendsModal(); openTransactionModal('repaid', '${friend}')" class="px-2.5 py-1 bg-[#6B21A8] text-white rounded-lg font-bold text-[10px] active:scale-95 transition">
               Settle
             </button>
           </div>
         `;
         container.appendChild(item);
       });
+    }
+
+    function openFriendsModal() {
+      document.getElementById('friends-modal').classList.remove('hidden');
+      document.getElementById('friends-modal').classList.add('flex');
+    }
+
+    function closeFriendsModal() {
+      document.getElementById('friends-modal').classList.add('hidden');
+      document.getElementById('friends-modal').classList.remove('flex');
     }
 
     function openTransactionModal(type = 'expense', friendName = '') {
@@ -630,25 +684,25 @@
       const titleInput = document.getElementById('tx-title');
 
       Object.keys(buttons).forEach(k => {
-        buttons[k].className = 'py-2 rounded-lg font-bold text-xs text-[#41484D] transition';
+        buttons[k].className = 'py-1.5 rounded-lg font-bold text-[10px] text-[#41484D] transition';
       });
 
       if (type === 'expense') {
-        buttons.expense.className = 'py-2 rounded-lg font-bold text-xs bg-[#BA1A1A] text-white transition shadow-sm';
+        buttons.expense.className = 'py-1.5 rounded-lg font-bold text-[10px] bg-[#BA1A1A] text-white transition shadow-sm';
         titleLabel.textContent = 'Store / Payee';
         titleInput.placeholder = 'e.g., Grocery Store';
       } else if (type === 'income') {
-        buttons.income.className = 'py-2 rounded-lg font-bold text-xs bg-[#386A20] text-white transition shadow-sm';
+        buttons.income.className = 'py-1.5 rounded-lg font-bold text-[10px] bg-[#386A20] text-white transition shadow-sm';
         titleLabel.textContent = 'Income Source';
         titleInput.placeholder = 'e.g., Salary, Client';
       } else if (type === 'borrowed') {
-        buttons.borrowed.className = 'py-2 rounded-lg font-bold text-xs bg-[#6B21A8] text-white transition shadow-sm';
+        buttons.borrowed.className = 'py-1.5 rounded-lg font-bold text-[10px] bg-[#6B21A8] text-white transition shadow-sm';
         titleLabel.textContent = "Friend's Name (Lender)";
-        titleInput.placeholder = 'e.g., Rahul, Amal';
+        titleInput.placeholder = 'e.g., Sajana P, Manu';
       } else if (type === 'repaid') {
-        buttons.repaid.className = 'py-2 rounded-lg font-bold text-xs bg-[#115E59] text-white transition shadow-sm';
+        buttons.repaid.className = 'py-1.5 rounded-lg font-bold text-[10px] bg-[#115E59] text-white transition shadow-sm';
         titleLabel.textContent = "Friend's Name (Paying Back)";
-        titleInput.placeholder = 'e.g., Rahul, Amal';
+        titleInput.placeholder = 'e.g., Sajana P, Manu';
       }
 
       const select = document.getElementById('tx-category');
@@ -694,21 +748,26 @@
           : notes
       };
 
+      // Optimistic Instant Save: add to memory and refresh UI immediately
+      const tempEntry = { ...payload, id: Date.now() };
+      transactions.push(tempEntry);
+      localStorage.setItem('cached_txs', JSON.stringify(transactions));
+      renderUI();
+
+      document.getElementById('tx-amount').value = '';
+      document.getElementById('tx-title').value = '';
+      document.getElementById('tx-notes').value = '';
+      closeTransactionModal();
+
       try {
         await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
-
-        document.getElementById('tx-amount').value = '';
-        document.getElementById('tx-title').value = '';
-        document.getElementById('tx-notes').value = '';
-        closeTransactionModal();
         await fetchTransactions();
       } catch (err) {
-        alert('Failed to save entry to Google Sheet.');
-        console.error(err);
+        console.error("Save error:", err);
       } finally {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Save Transaction';
@@ -721,6 +780,7 @@
 
       try {
         transactions = transactions.filter(t => String(t.id) !== String(id));
+        localStorage.setItem('cached_txs', JSON.stringify(transactions));
         renderUI();
 
         await fetch(API_URL, {
@@ -761,15 +821,16 @@
       ['all', 'expense', 'income', 'debt'].forEach(f => {
         const el = document.getElementById(`filter-${f}`);
         if (f === type) {
-          el.className = 'px-3 py-1.5 rounded-xl bg-[#006495] text-white transition';
+          el.className = 'px-3 py-1.5 rounded-xl bg-[#006495] text-white transition shrink-0';
         } else {
-          el.className = 'px-3 py-1.5 rounded-xl bg-[#F0F4F8] text-[#41484D] hover:bg-gray-200 transition';
+          el.className = 'px-3 py-1.5 rounded-xl bg-[#F0F4F8] text-[#41484D] hover:bg-gray-200 transition shrink-0';
         }
       });
       renderUI();
     }
 
-    // Initial load
+    // Immediate render with local cache, then background fetch
+    renderUI();
     fetchTransactions();
   </script>
 </body>
