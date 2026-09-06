@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Personal Finance Ledger</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    * {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    input, select {
+      font-size: 16px !important;
+    }
+
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-enter {
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-open {
+      transform: translateY(0%);
+    }
+  </style>
+</head>
+<body class="bg-[#0b0f19] text-slate-100 antialiased min-h-screen selection:bg-indigo-500 selection:text-white pb-28">
+
+  <!-- Glow Background Effect -->
+  <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-72 bg-gradient-to-b from-indigo-900/30 via-purple-900/10 to-transparent pointer-events-none -z-10 blur-3xl"></div>
+
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-6">
+
+    <!-- Header Navigation -->
+    <header class="flex items-center justify-between glass-card px-4 sm:px-6 py-3.5 rounded-2xl shadow-2xl">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-white tracking-tight leading-none">Personal Ledger</h1>
+          <p class="text-[11px] font-medium text-emerald-400 mt-1 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Google Sheets Sync
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button 
+          id="refresh-btn" 
+          onclick="fetchTransactions()" 
+          title="Refresh Data"
+          class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-slate-300 hover:text-white active:scale-95 transition hover:bg-slate-700/50">
+          <svg id="refresh-icon" class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+        <button 
+          onclick="openModal()" 
+          class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 active:scale-95 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Add Record
+        </button>
+      </div>
+    </header>
+
+    <!-- Simplified Summary Cards -->
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      
+      <!-- Balance Left (Formerly Net Liquidity) -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-500/10 rounded-full blur-xl"></div>
+        <p class="text-[11px] font-semibold tracking-wider uppercase text-slate-400">Balance Left</p>
+        <h3 id="net-balance" class="text-xl sm:text-2xl font-extrabold text-white mt-2 truncate">₹0</h3>
+        <p class="text-[10px] text-slate-500 mt-1">Cash in hand</p>
+      </div>
+
+      <!-- Money to Return (Formerly Debt Owed) -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5 relative overflow-hidden group border-purple-500/30 bg-gradient-to-br from-slate-900/90 to-purple-950/30">
+        <div class="absolute -right-4 -top-4 w-16 h-16 bg-purple-500/20 rounded-full blur-xl"></div>
+        <div class="flex items-center justify-between">
+          <p class="text-[11px] font-semibold tracking-wider uppercase text-purple-300">Money to Return</p>
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/20 text-purple-300">Friends</span>
+        </div>
+        <h3 id="total-debt" class="text-xl sm:text-2xl font-extrabold text-purple-300 mt-2 truncate">₹0</h3>
+        <p class="text-[10px] text-purple-400/80 mt-1">Borrowed amount</p>
+      </div>
+
+      <!-- Money In (Formerly Inflow) -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+        <p class="text-[11px] font-semibold tracking-wider uppercase text-emerald-400/80">Money In</p>
+        <h3 id="total-income" class="text-xl sm:text-2xl font-extrabold text-emerald-400 mt-2 truncate">₹0</h3>
+        <p class="text-[10px] text-slate-500 mt-1">Income & salary</p>
+      </div>
+
+      <!-- Total Spent (Formerly Outflow) -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+        <p class="text-[11px] font-semibold tracking-wider uppercase text-rose-400/80">Total Spent</p>
+        <h3 id="total-expense" class="text-xl sm:text-2xl font-extrabold text-rose-400 mt-2 truncate">₹0</h3>
+        <p class="text-[10px] text-slate-500 mt-1">Regular expenses</p>
+      </div>
+    </section>
+
+    <!-- Mid Section: Friends Due List & Category Chart -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      
+      <!-- Friend-Wise Borrowed List -->
+      <section class="glass-card rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-sm sm:text-base font-bold text-white tracking-tight">Friends to Pay Back</h2>
+              <p class="text-xs text-slate-400">Individual balances</p>
+            </div>
+            <span class="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs">👥</span>
+          </div>
+
+          <div id="friends-debt-list" class="space-y-2.5 max-h-52 overflow-y-auto pr-1">
+            <div class="text-center py-8 text-xs text-slate-500">No active debts recorded.</div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-700/60 flex items-center justify-between text-xs text-slate-400">
+          <span>Updates automatically</span>
+          <button onclick="openModal('borrowed')" class="text-purple-400 hover:text-purple-300 font-semibold transition">+ Borrow from Friend</button>
+        </div>
+      </section>
+
+      <!-- Expense Categories Chart -->
+      <section class="glass-card rounded-2xl p-5 shadow-xl flex flex-col items-center justify-between">
+        <div class="w-full flex items-center justify-between mb-2">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-white tracking-tight">Spending Categories</h2>
+            <p class="text-xs text-slate-400">Shows where money went</p>
+          </div>
+          <span class="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xs">📊</span>
+        </div>
+        
+        <div class="relative w-full max-w-[210px] aspect-square flex items-center justify-center my-auto py-2">
+          <canvas id="categoryChart"></canvas>
+        </div>
+
+        <p class="text-[11px] text-slate-500 text-center mt-2">Tap any segment in chart to inspect</p>
+      </section>
+    </div>
+
+    <!-- Transaction Activity Section -->
+    <section class="glass-card rounded-2xl shadow-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-700/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-white tracking-tight">Transaction History</h2>
+          <p id="tx-count" class="text-xs text-slate-400">0 records</p>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 text-[11px] font-semibold w-full sm:w-auto overflow-x-auto">
+          <button onclick="setFilter('all')" id="filter-all" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white transition">All</button>
+          <button onclick="setFilter('expense')" id="filter-expense" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Spent</button>
+          <button onclick="setFilter('income')" id="filter-income" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Income</button>
+          <button onclick="setFilter('debt')" id="filter-debt" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Borrowed</button>
+        </div>
+      </div>
+
+      <!-- Transaction List Body -->
+      <div id="tx-list" class="divide-y divide-slate-800/70 max-h-[500px] overflow-y-auto">
+        <div class="px-4 py-12 text-center text-xs text-slate-500">Loading records...</div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Mobile Floating Quick Entry Button -->
+  <div class="fixed bottom-6 inset-x-0 sm:hidden flex justify-center z-30 px-6 pointer-events-none">
+    <button 
+      onclick="openModal()" 
+      class="pointer-events-auto flex items-center gap-2.5 px-6 py-3.5 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 active:scale-95 text-white font-bold text-sm rounded-full shadow-2xl shadow-indigo-500/50 transition">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+      </svg>
+      <span>Quick Entry</span>
+    </button>
+  </div>
+
+  <!-- Slide-Up Entry Drawer -->
+  <div id="modal-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300" onclick="closeModal()"></div>
+  
+  <div id="entry-modal" class="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md glass-card bg-[#131b2e] sm:rounded-3xl rounded-t-3xl border-slate-700 shadow-2xl z-50 p-6 modal-enter hidden">
+    <div class="w-12 h-1 bg-slate-700 rounded-full mx-auto mb-4 sm:hidden"></div>
+
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-bold text-white tracking-tight">Add New Entry</h3>
+      <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition">✕</button>
+    </div>
+
+    <form id="tx-form" onsubmit="handleSubmit(event)" class="space-y-4">
+      
+      <!-- Type Selection Tabs -->
+      <div class="grid grid-cols-4 p-1 bg-slate-900/90 rounded-xl border border-slate-700/80 text-[11px] font-semibold text-center">
+        <button type="button" id="btn-expense" onclick="selectType('expense')" class="py-2 rounded-lg bg-rose-600 text-white transition shadow">Spent</button>
+        <button type="button" id="btn-income" onclick="selectType('income')" class="py-2 rounded-lg text-slate-400 hover:text-slate-200 transition">Income</button>
+        <button type="button" id="btn-borrowed" onclick="selectType('borrowed')" class="py-2 rounded-lg text-slate-400 hover:text-slate-200 transition">Borrowed</button>
+        <button type="button" id="btn-repaid" onclick="selectType('repaid')" class="py-2 rounded-lg text-slate-400 hover:text-slate-200 transition">Repaid</button>
+      </div>
+
+      <!-- Amount -->
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Amount</label>
+        <div class="relative">
+          <span class="absolute left-3.5 top-2.5 text-lg font-bold text-slate-400">₹</span>
+          <input 
+            type="number" 
+            step="0.01" 
+            id="modal-amount" 
+            required 
+            placeholder="0.00" 
+            class="w-full pl-9 pr-4 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-lg text-white placeholder-slate-600" 
+          />
+        </div>
+      </div>
+
+      <!-- Payee / Name -->
+      <div>
+        <label id="modal-payee-label" class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Store / Person</label>
+        <input 
+          type="text" 
+          id="modal-payee" 
+          required 
+          placeholder="e.g. Grocery Store" 
+          class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-100 placeholder-slate-600" 
+        />
+      </div>
+
+      <!-- Category & Payment Method -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Category</label>
+          <select id="modal-category" class="w-full px-3 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-100">
+            <option value="Groceries">Groceries</option>
+            <option value="Dining">Dining / Food</option>
+            <option value="Utilities">Bills & Utilities</option>
+            <option value="Salary">Salary</option>
+            <option value="Borrowed Loan">Borrowed Loan</option>
+            <option value="Debt Repayment">Debt Repayment</option>
+            <option value="Misc">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Paid Via</label>
+          <select id="modal-account" class="w-full px-3 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-100">
+            <option value="UPI">UPI</option>
+            <option value="Bank Account">Bank Account</option>
+            <option value="Cash">Cash</option>
+            <option value="Credit Card">Credit Card</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Date & Notes -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Date</label>
+          <input 
+            type="date" 
+            id="modal-date" 
+            required 
+            class="w-full px-3 py-2 bg-slate-900/90 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-100" 
+          />
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Notes</label>
+          <input 
+            type="text" 
+            id="modal-notes" 
+            placeholder="Optional note" 
+            class="w-full px-3 py-2 bg-slate-900/90 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-100 placeholder-slate-600" 
+          />
+        </div>
+      </div>
+
+      <button 
+        type="submit" 
+        id="modal-submit-btn" 
+        class="w-full mt-2 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-98 text-white rounded-xl font-bold text-sm shadow-xl shadow-indigo-600/30 transition">
+        Save Transaction
+      </button>
+    </form>
+  </div>
+
+  <script>
+    // Paste your deployed Google Apps Script Web App URL below
+    const API_URL = "https://script.google.com/macros/s/AKfycbw8Khw-2aSe8plcuaSDlcQt5zwi4cFwlrf1sYkM65SsDWXASln2_dqM1PW--7ghSzlyYw/exec";
+
+    let activeType = "expense";
+    let activeFilter = "all";
+    let chartInstance = null;
+    let transactions = [];
+
+    // Set today's date
+    document.getElementById("modal-date").value = new Date().toISOString().split("T")[0];
+
+    function openModal(defaultType = null, defaultFriend = "") {
+      const modal = document.getElementById("entry-modal");
+      const backdrop = document.getElementById("modal-backdrop");
+      
+      modal.classList.remove("hidden");
+      backdrop.classList.remove("hidden");
+      
+      setTimeout(() => {
+        backdrop.classList.add("opacity-100");
+        modal.classList.add("modal-open");
+      }, 10);
+
+      if (defaultType) selectType(defaultType);
+      if (defaultFriend) document.getElementById("modal-payee").value = defaultFriend;
+    }
+
+    function closeModal() {
+      const modal = document.getElementById("entry-modal");
+      const backdrop = document.getElementById("modal-backdrop");
+      
+      modal.classList.remove("modal-open");
+      backdrop.classList.remove("opacity-100");
+      
+      setTimeout(() => {
+        modal.classList.add("hidden");
+        backdrop.classList.add("hidden");
+      }, 300);
+    }
+
+    function selectType(type) {
+      activeType = type;
+      const buttons = {
+        expense: document.getElementById("btn-expense"),
+        income: document.getElementById("btn-income"),
+        borrowed: document.getElementById("btn-borrowed"),
+        repaid: document.getElementById("btn-repaid")
+      };
+
+      const categorySelect = document.getElementById("modal-category");
+      const payeeLabel = document.getElementById("modal-payee-label");
+      const payeeInput = document.getElementById("modal-payee");
+
+      Object.keys(buttons).forEach(key => {
+        buttons[key].className = "py-2 rounded-lg text-slate-400 hover:text-slate-200 transition";
+      });
+
+      if (type === "expense") {
+        buttons.expense.className = "py-2 rounded-lg bg-rose-600 text-white shadow transition";
+        payeeLabel.textContent = "Store / Payee";
+        payeeInput.placeholder = "e.g. Supermarket, Amazon";
+        if (categorySelect.value.includes("Debt") || categorySelect.value.includes("Borrowed")) {
+          categorySelect.value = "Groceries";
+        }
+      } else if (type === "income") {
+        buttons.income.className = "py-2 rounded-lg bg-emerald-600 text-white shadow transition";
+        payeeLabel.textContent = "Source";
+        payeeInput.placeholder = "e.g. Salary, Client";
+        categorySelect.value = "Salary";
+      } else if (type === "borrowed") {
+        buttons.borrowed.className = "py-2 rounded-lg bg-purple-600 text-white shadow transition";
+        payeeLabel.textContent = "Friend (Lender)";
+        payeeInput.placeholder = "e.g. Rahul, Priya";
+        categorySelect.value = "Borrowed Loan";
+      } else if (type === "repaid") {
+        buttons.repaid.className = "py-2 rounded-lg bg-teal-600 text-white shadow transition";
+        payeeLabel.textContent = "Friend (Repaying to)";
+        payeeInput.placeholder = "e.g. Rahul, Priya";
+        categorySelect.value = "Debt Repayment";
+      }
+    }
+
+    function setFilter(filter) {
+      activeFilter = filter;
+      const filterBtns = ["all", "expense", "income", "debt"];
+      
+      filterBtns.forEach(key => {
+        const btn = document.getElementById(`filter-${key}`);
+        if (key === filter) {
+          btn.className = "px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold transition";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition";
+        }
+      });
+
+      renderDashboard();
+    }
+
+    async function fetchTransactions() {
+      const refreshBtn = document.getElementById("refresh-btn");
+      const refreshIcon = document.getElementById("refresh-icon");
+      refreshIcon.classList.add("animate-spin");
+      refreshBtn.disabled = true;
+
+      try {
+        const response = await fetch(API_URL);
+        transactions = await response.json();
+        renderDashboard();
+      } catch (err) {
+        console.error("Failed to fetch records:", err);
+      } finally {
+        refreshIcon.classList.remove("animate-spin");
+        refreshBtn.disabled = false;
+      }
+    }
+
+    async function handleSubmit(event) {
+      event.preventDefault();
+      const submitBtn = document.getElementById("modal-submit-btn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Saving...";
+
+      const rawAmount = parseFloat(document.getElementById("modal-amount").value) || 0;
+      let finalAmount = (activeType === "expense" || activeType === "repaid") 
+        ? -Math.abs(rawAmount) 
+        : Math.abs(rawAmount);
+
+      const payload = {
+        date: document.getElementById("modal-date").value,
+        payee: document.getElementById("modal-payee").value.trim(),
+        category: document.getElementById("modal-category").value,
+        account: document.getElementById("modal-account").value,
+        amount: finalAmount,
+        notes: (activeType === "borrowed" || activeType === "repaid") 
+          ? `[${activeType.toUpperCase()}] ${document.getElementById("modal-notes").value}`.trim()
+          : document.getElementById("modal-notes").value
+      };
+
+      try {
+        await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        document.getElementById("modal-amount").value = "";
+        document.getElementById("modal-payee").value = "";
+        document.getElementById("modal-notes").value = "";
+        closeModal();
+        await fetchTransactions();
+      } catch (err) {
+        alert("Failed to commit entry to Google Sheet.");
+        console.error(err);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Save Transaction";
+      }
+    }
+
+    async function deleteTransaction(id, payee, amount) {
+      const confirmed = confirm(`Are you sure you want to delete this record?\n\n${payee} (₹${Math.abs(amount).toLocaleString('en-IN')})`);
+      if (!confirmed) return;
+
+      try {
+        // Immediate local removal so user doesn't wait
+        transactions = transactions.filter(item => String(item.id) !== String(id));
+        renderDashboard();
+
+        await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "delete", id: id })
+        });
+      } catch (err) {
+        alert("Could not delete from Google Sheet. Refreshing data...");
+        console.error(err);
+        await fetchTransactions();
+      }
+    }
+
+    function renderDashboard() {
+      let totalIncome = 0;
+      let totalExpense = 0;
+      let totalDebtOwed = 0;
+      const categoryTotals = {};
+      const friendLedger = {};
+
+      const listContainer = document.getElementById("tx-list");
+      listContainer.innerHTML = "";
+
+      // Proper Zero Reset: if no transactions exist, reset all card numbers to ₹0
+      if (!transactions || transactions.length === 0) {
+        listContainer.innerHTML = '<div class="px-4 py-12 text-center text-xs text-slate-500">No records found. Click "+ Quick Entry" to start.</div>';
+        document.getElementById("tx-count").textContent = "0 records";
+        
+        document.getElementById("total-income").textContent = "₹0";
+        document.getElementById("total-expense").textContent = "₹0";
+        document.getElementById("total-debt").textContent = "₹0";
+        
+        const netEl = document.getElementById("net-balance");
+        netEl.textContent = "₹0";
+        netEl.className = "text-xl sm:text-2xl font-extrabold mt-2 truncate text-white";
+
+        renderFriendDebtList({});
+        updateChart({});
+        return;
+      }
+
+      document.getElementById("tx-count").textContent = `${transactions.length} records`;
+      const sorted = [...transactions].reverse();
+
+      sorted.forEach(item => {
+        const amt = parseFloat(item.amount) || 0;
+        const cat = item.category || "General";
+        const notes = (item.notes || "").toLowerCase();
+        const payee = (item.payee || "Friend").trim();
+
+        const isBorrowed = cat === "Borrowed Loan" || notes.includes("[borrowed]");
+        const isRepaid = cat === "Debt Repayment" || notes.includes("[repaid]");
+
+        if (isBorrowed) {
+          const debtAmt = Math.abs(amt);
+          totalDebtOwed += debtAmt;
+          friendLedger[payee] = (friendLedger[payee] || 0) + debtAmt;
+        } else if (isRepaid) {
+          const repayAmt = Math.abs(amt);
+          totalDebtOwed -= repayAmt;
+          friendLedger[payee] = (friendLedger[payee] || 0) - repayAmt;
+        } else {
+          if (amt >= 0) {
+            totalIncome += amt;
+          } else {
+            const expAmt = Math.abs(amt);
+            totalExpense += expAmt;
+            categoryTotals[cat] = (categoryTotals[cat] || 0) + expAmt;
+          }
+        }
+      });
+
+      const filtered = sorted.filter(item => {
+        const amt = parseFloat(item.amount) || 0;
+        const cat = item.category || "";
+        const notes = (item.notes || "").toLowerCase();
+        const isDebt = cat.includes("Borrowed") || cat.includes("Debt") || notes.includes("[borrowed]") || notes.includes("[repaid]");
+
+        if (activeFilter === "debt") return isDebt;
+        if (activeFilter === "expense") return amt < 0 && !isDebt;
+        if (activeFilter === "income") return amt >= 0 && !isDebt;
+        return true;
+      });
+
+      filtered.forEach(item => {
+        const amt = parseFloat(item.amount) || 0;
+        const cat = item.category || "General";
+        const notes = (item.notes || "").toLowerCase();
+        const isBorrowed = cat === "Borrowed Loan" || notes.includes("[borrowed]");
+        const isRepaid = cat === "Debt Repayment" || notes.includes("[repaid]");
+
+        let badgeBg = amt >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400";
+        let amountText = amt >= 0 ? "text-emerald-400" : "text-rose-400";
+        let sign = amt >= 0 ? "+" : "-";
+
+        if (isBorrowed) {
+          badgeBg = "bg-purple-500/15 text-purple-300 border border-purple-500/30";
+          amountText = "text-purple-300";
+          sign = "+";
+        } else if (isRepaid) {
+          badgeBg = "bg-teal-500/15 text-teal-300 border border-teal-500/30";
+          amountText = "text-teal-300";
+          sign = "-";
+        }
+
+        const formatted = `${sign}₹${Math.abs(amt).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+        const safePayee = (item.payee || "Untitled").replace(/'/g, "\\'");
+
+        const row = document.createElement("div");
+        row.className = "px-4 sm:px-6 py-3.5 flex items-center justify-between hover:bg-slate-800/40 transition group";
+        row.innerHTML = `
+          <div class="flex items-center gap-3.5 min-w-0 pr-2">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${badgeBg} font-bold text-xs">
+              ${isBorrowed ? "🤝" : isRepaid ? "↩" : amt >= 0 ? "↓" : "↑"}
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs sm:text-sm font-semibold text-white truncate">${item.payee || "Untitled"}</p>
+              <div class="flex items-center gap-1.5 text-[10px] sm:text-xs text-slate-400 mt-0.5">
+                <span>${item.date ? String(item.date).split("T")[0] : ""}</span>
+                <span>•</span>
+                <span class="${isBorrowed ? 'text-purple-300' : isRepaid ? 'text-teal-300' : ''}">${cat}</span>
+                <span>•</span>
+                <span>${item.account || "UPI"}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <span class="text-xs sm:text-sm font-bold ${amountText}">${formatted}</span>
+            <button 
+              onclick="deleteTransaction('${item.id}', '${safePayee}', ${amt})" 
+              title="Delete record" 
+              class="opacity-60 group-hover:opacity-100 hover:text-rose-400 text-slate-500 p-1.5 rounded-lg transition hover:bg-rose-500/10">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        `;
+        listContainer.appendChild(row);
+      });
+
+      renderFriendDebtList(friendLedger);
+
+      // Simple metric cards output
+      document.getElementById("total-income").textContent = `₹${Math.round(totalIncome).toLocaleString("en-IN")}`;
+      document.getElementById("total-expense").textContent = `₹${Math.round(totalExpense).toLocaleString("en-IN")}`;
+      
+      const net = totalIncome - totalExpense;
+      const netEl = document.getElementById("net-balance");
+      netEl.textContent = `₹${Math.round(net).toLocaleString("en-IN")}`;
+      netEl.className = `text-xl sm:text-2xl font-extrabold mt-2 truncate ${net >= 0 ? "text-white" : "text-rose-400"}`;
+
+      document.getElementById("total-debt").textContent = `₹${Math.max(0, Math.round(totalDebtOwed)).toLocaleString("en-IN")}`;
+
+      updateChart(categoryTotals);
+    }
+
+    function renderFriendDebtList(ledger) {
+      const container = document.getElementById("friends-debt-list");
+      container.innerHTML = "";
+
+      const activeFriends = Object.entries(ledger).filter(([_, balance]) => balance > 0);
+
+      if (activeFriends.length === 0) {
+        container.innerHTML = '<div class="text-center py-6 text-xs text-slate-500 font-medium">✨ All friend debts are cleared!</div>';
+        return;
+      }
+
+      activeFriends.forEach(([friend, balance]) => {
+        const item = document.createElement("div");
+        item.className = "flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs";
+        item.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center text-[10px] font-bold">
+              ${friend.charAt(0).toUpperCase()}
+            </div>
+            <span class="font-semibold text-slate-200 truncate">${friend}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-purple-300">₹${balance.toLocaleString("en-IN")}</span>
+            <button 
+              onclick="openModal('repaid', '${friend}')" 
+              class="px-2.5 py-1 rounded-lg bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 text-[10px] font-bold transition">
+              Settle
+            </button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function updateChart(categoryTotals) {
+      const labels = Object.keys(categoryTotals);
+      const data = Object.values(categoryTotals);
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      const ctx = document.getElementById("categoryChart").getContext("2d");
+      chartInstance = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: labels.length ? labels : ["No Expenses"],
+          datasets: [{
+            data: data.length ? data : [1],
+            backgroundColor: labels.length
+              ? ["#6366f1", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6"]
+              : ["#1e293b"],
+            borderWidth: 2,
+            borderColor: "#0f172a"
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                boxWidth: 8,
+                color: "#94a3b8",
+                font: { size: 10, family: "Plus Jakarta Sans" }
+              }
+            }
+          },
+          cutout: "75%"
+        }
+      });
+    }
+
+    fetchTransactions();
+  </script>
+</body>
+</html>
